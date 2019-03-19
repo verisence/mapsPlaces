@@ -3,6 +3,8 @@ package com.example.mapsplaces;
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -11,6 +13,10 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -24,6 +30,10 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
     @Override
@@ -32,8 +42,21 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Log.d(TAG, "onMapReady: Map is ready");
         mMap = googleMap;
 
-        if(mLocationPermissionGranted){
+        if (mLocationPermissionGranted) {
             getDeviceLocation();
+
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+            mMap.setMyLocationEnabled(true);
+            //disable button that brings back to current location
+//            mMap.getUiSettings().setMyLocationButtonEnabled(false);
+            mMap.getUiSettings().setCompassEnabled(true);
+//            mMap.getUiSettings().setIndoorLevelPickerEnabled(true);
+            mMap.getUiSettings().setRotateGesturesEnabled(true);
+//            mMap.getUiSettings().setAllGesturesEnabled(true);
+
+            init();
         }
     }
 
@@ -44,6 +67,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
     private static final float DEFAULT_ZOOM = 15f;
 
+    //widgets
+    private EditText mSearchText;
+
     //vars
     private Boolean mLocationPermissionGranted = false;
     private GoogleMap mMap;
@@ -53,7 +79,46 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
-        getLocationPermission(); 
+
+        mSearchText = (EditText) findViewById(R.id.input_search);
+        
+
+        getLocationPermission();
+    }
+    
+    private void init(){
+        Log.d(TAG, "init: initializing");
+
+        mSearchText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH
+                        || actionId == EditorInfo.IME_ACTION_DONE){
+                    geoLocate();
+                }
+
+                return false;
+            }
+
+            private void geoLocate() {
+                Log.d(TAG, "geoLocate: GeoLocating");
+
+                String searchString = mSearchText.getText().toString();
+
+                Geocoder geocoder = new Geocoder(MapActivity.this);
+                List<Address> list = new ArrayList<>();
+
+                try {
+                    list = geocoder.getFromLocationName(searchString, 1);
+                }catch (IOException e){
+                    Log.e(TAG, "geoLocate: IOException" + e.getMessage());
+                }
+                if (list.size()>0){
+                    Address address = list.get(0);
+                    Toast.makeText(MapActivity.this, address.toString(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void getDeviceLocation(){
