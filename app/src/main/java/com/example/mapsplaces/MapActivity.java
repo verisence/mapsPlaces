@@ -27,6 +27,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
@@ -48,12 +49,12 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return;
             }
-            mMap.setMyLocationEnabled(true);
+//            mMap.setMyLocationEnabled(true);
             //disable button that brings back to current location
 //            mMap.getUiSettings().setMyLocationButtonEnabled(false);
-            mMap.getUiSettings().setCompassEnabled(true);
+//            mMap.getUiSettings().setCompassEnabled(true);
 //            mMap.getUiSettings().setIndoorLevelPickerEnabled(true);
-            mMap.getUiSettings().setRotateGesturesEnabled(true);
+//            mMap.getUiSettings().setRotateGesturesEnabled(true);
 //            mMap.getUiSettings().setAllGesturesEnabled(true);
 
             init();
@@ -115,7 +116,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 }
                 if (list.size()>0){
                     Address address = list.get(0);
-                    Toast.makeText(MapActivity.this, address.toString(), Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(MapActivity.this, address.toString(), Toast.LENGTH_SHORT).show();
+                    moveCamera(new LatLng(address.getLatitude(), address.getLongitude()), DEFAULT_ZOOM, address.getAddressLine(0));
                 }
             }
         });
@@ -134,7 +136,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                             Log.d(TAG, "onComplete: Found location");
                             Location currentLocation = (Location) task.getResult();
 
-                            moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM);
+                            moveCamera(new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude()), DEFAULT_ZOOM, "My location");
                         }else{
                             Log.d(TAG, "onComplete: current location is null");
                             Toast.makeText(getApplicationContext(), "Current location not found", Toast.LENGTH_SHORT).show();
@@ -147,9 +149,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-    private void moveCamera(LatLng latLng, float zoom){
+    private void moveCamera(LatLng latLng, float zoom, String title){
         Log.d(TAG, "moveCamera: moving camera to: latitude: " +latLng.latitude+ "and longitude: " + latLng.longitude);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, zoom));
+        if (!title.equals("My Location")){
+            MarkerOptions options = new MarkerOptions()
+                    .position(latLng)
+                    .title(title);
+
+            mMap.addMarker(options);
+
+        }
     }
 
     private void initMap(){
